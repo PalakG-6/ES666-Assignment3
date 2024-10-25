@@ -1,6 +1,6 @@
 import cv2
 import os
-from src.Mysubmission.stitcher import PanaromaStitcher
+from src.MySubmission.stitcher import PanaromaStitcher
 
 
 def load_images_from_folder(folder_path):
