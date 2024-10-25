@@ -1,41 +1,44 @@
-import pdb
-import src
-import glob
-import importlib
-import os
 import cv2
+import os
+from src.Mysubmission.stitcher import PanaromaStitcher
 
 
+def load_images_from_folder(folder_path):
+    images = []
+    for filename in sorted(os.listdir(folder_path)):
+        img_path = os.path.join(folder_path, filename)
+        img = cv2.imread(img_path)
+        if img is not None:
+            images.append(img)
+    return images
 
-### Change path to images here
-path = 'Images{}*'.format(os.sep)  # Use os.sep, Windows, linux have different path delimiters
-###
+def main():
+    folders = ['I1', 'I2', 'I3', 'I4', 'I5', 'I6']
+    print("1")
+    stitcher = PanaromaStitcher()
+    print("2")
+    for folder in folders:
+        folder_path = f'Images/{folder}'
+        print("3")
+        images = load_images_from_folder(folder_path)
+        if len(images) < 2:
+            print(f"Not enough images in {folder} to create a panorama. Skipping.")
+            continue
+        
+        # Create panorama
+        try:
+            panorama, homographies = stitcher.make_panaroma_for_images_in(images)
+            print(f"entered for {folder}")
+            output_path = f'./results/{folder}_panorama.jpg'
+            if not os.path.exists('results'):
+                os.makedirs('results')
+            cv2.imwrite(output_path, panorama)
+            print(f"Panorama created and saved for {folder}!")
+        except Exception as e:
+            print(f"Failed to create panorama for {folder}. Error: {e}")
 
-all_submissions = glob.glob('./src/*')
-os.makedirs('./results/', exist_ok=True)
-for idx,algo in enumerate(all_submissions):
-    print('****************\tRunning Awesome Stitcher developed by: {}  | {} of {}\t********************'.format(algo.split(os.sep)[-1],idx,len(all_submissions)))
-    try:
-        module_name = '{}_{}'.format(algo.split(os.sep)[-1],'stitcher')
-        filepath = '{}{}stitcher.py'.format( algo,os.sep,'stitcher.py')
-        spec = importlib.util.spec_from_file_location(module_name, filepath)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        PanaromaStitcher = getattr(module, 'PanaromaStitcher')
-        inst = PanaromaStitcher()
+if __name__ == "__main__":
+    print("hi")
+    main()
 
-        ###
-        for impaths in glob.glob(path):
-            print('\t\t Processing... {}'.format(impaths))
-            stitched_image, homography_matrix_list = inst.make_panaroma_for_images_in(path=impaths)
 
-            outfile =  './results/{}/{}.png'.format(impaths.split(os.sep)[-1],spec.name)
-            os.makedirs(os.path.dirname(outfile),exist_ok=True)
-            cv2.imwrite(outfile,stitched_image)
-            print(homography_matrix_list)
-            print('Panaroma saved ... @ ./results/{}.png'.format(spec.name))
-            print('\n\n')
-
-    except Exception as e:
-        print('Oh No! My implementation encountered this issue\n\t{}'.format(e))
-        print('\n\n')
